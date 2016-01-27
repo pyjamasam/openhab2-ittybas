@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Bundle-SymbolicName: org.openhab.binding.jeelabs;singleton:=true
+Export-Package: org.openhab.binding.jeelabs,org.openhab.binding.jeelab
+ s.handler
+Bundle-Name: JeeLabs Binding
+Bundle-Version: 2.0.0.201601272119
+Bundle-ClassPath: .
+Bundle-ManifestVersion: 2
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-Vendor: openHAB
+Import-Package: org.openhab.binding.jeelabs,org.openhab.binding.jeelab
+ s.handler,org.eclipse.smarthome.config.core,org.eclipse.smarthome.cor
+ e.library.types,org.eclipse.smarthome.core.thing,org.eclipse.smarthom
+ e.core.thing.binding,org.eclipse.smarthome.core.thing.binding.builder
+ ,org.eclipse.smarthome.core.thing.type,org.eclipse.smarthome.core.typ
+ es,org.slf4j,com.google.common.collect,gnu.io,org.apache.commons.io
+Service-Component: OSGI-INF/*.xml
+
