@@ -8,9 +8,8 @@
  */
 package org.openhab.binding.jeelabs.internal.connector;
 
-import org.openhab.binding.jeelabs.internal.connector.JeeLinkEventListener;
-
 import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * This interface defines interface to communicate JeeLink controller.
@@ -35,20 +34,5 @@ public interface JeeLinkConnectorInterface {
 	 */
 	public void disconnect();
 
-	/**
-	 * Procedure for register event listener.
-	 *
-	 * @param listener
-	 *            Event listener instance to handle events.
-	 */
-	public void addEventListener(JeeLinkEventListener listener);
-
-	/**
-	 * Procedure for remove event listener.
-	 *
-	 * @param listener
-	 *            Event listener instance to remove.
-	 */
-	public void removeEventListener(JeeLinkEventListener listener);
-
+	public BlockingQueue messageQueue();
 }

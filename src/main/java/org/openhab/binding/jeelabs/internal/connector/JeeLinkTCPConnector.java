@@ -13,10 +13,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TooManyListenersException;
-
-import javax.xml.bind.DatatypeConverter;
-
-import org.openhab.binding.jeelabs.internal.connector.JeeLinkEventListener;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -31,7 +29,7 @@ public class JeeLinkTCPConnector implements JeeLinkConnectorInterface {
 
 	private static final Logger logger = LoggerFactory.getLogger(JeeLinkSerialConnector.class);
 
-	private static List<JeeLinkEventListener> _listeners = new ArrayList<JeeLinkEventListener>();
+	BlockingQueue _queue = new ArrayBlockingQueue(1024);
 
 	public JeeLinkTCPConnector() {
 	}
@@ -47,43 +45,7 @@ public class JeeLinkTCPConnector implements JeeLinkConnectorInterface {
 		logger.debug("Disconnecting...");
 	}
 
-
-	@Override
-	public synchronized void addEventListener(JeeLinkEventListener listener) {
-		if (!_listeners.contains(listener)) {
-			_listeners.add(listener);
-		}
+	public BlockingQueue messageQueue() {
+		return _queue;
 	}
-
-	@Override
-	public synchronized void removeEventListener(JeeLinkEventListener listener) {
-		_listeners.remove(listener);
-	}
-
-	private void _sendMsgToListeners(byte[] msg) {
-		try {
-			Iterator<JeeLinkEventListener> iterator = _listeners.iterator();
-
-			while (iterator.hasNext()) {
-				((JeeLinkEventListener) iterator.next()).packetReceived(msg);
-			}
-
-		} catch (Exception e) {
-			logger.error("Event listener invoking error", e);
-		}
-	}
-
-	private void _sendErrorToListeners(String error) {
-		try {
-			Iterator<JeeLinkEventListener> iterator = _listeners.iterator();
-
-			while (iterator.hasNext()) {
-				((JeeLinkEventListener) iterator.next()).errorOccured(error);
-			}
-
-		} catch (Exception e) {
-			logger.error("Event listener invoking error", e);
-		}
-	}
-
 }

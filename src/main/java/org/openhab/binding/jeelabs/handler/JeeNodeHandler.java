@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.openhab.binding.jeelabs.handler.JeeLinkHandler;
+import org.openhab.binding.jeelabs.internal.JeeNodeDataListener;
 
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Chris Whiteford - Initial contribution
  */
-public class JeeNodeHandler extends BaseThingHandler {
+public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListener {
 
     public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Collections.singleton(THING_TYPE_JEENODE);
 
@@ -72,9 +73,8 @@ public class JeeNodeHandler extends BaseThingHandler {
     public void dispose() {
         logger.debug("disposed");
         if (this._nodeId != null) {
-            JeeLinkHandler bridgeHandler = _getBridgeHandler();
-            if (bridgeHandler != null) {
-                //getHueBridgeHandler().unregisterLightStatusListener(this);
+            if (this._bridgeHandler != null) {
+                this._bridgeHandler.unregisterNode(this);
             }
             this._nodeId = null;
         }
@@ -90,7 +90,7 @@ public class JeeNodeHandler extends BaseThingHandler {
             ThingHandler handler = bridge.getHandler();
             if (handler instanceof JeeLinkHandler) {
                 this._bridgeHandler = (JeeLinkHandler) handler;
-                //this.bridgeHandler.registerLightStatusListener(this);
+                this._bridgeHandler.registerNode(this);
             } else {
                 return null;
             }

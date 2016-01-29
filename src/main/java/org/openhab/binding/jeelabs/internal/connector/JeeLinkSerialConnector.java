@@ -21,12 +21,18 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TooManyListenersException;
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 
 import java.io.DataInputStream;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.openhab.binding.jeelabs.internal.connector.JeeLinkEventListener;
+import org.openhab.binding.jeelabs.internal.JeeLinkMessage;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -41,17 +47,115 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 
 	private static final Logger logger = LoggerFactory.getLogger(JeeLinkSerialConnector.class);
 
-	private static List<JeeLinkEventListener> _listeners = new ArrayList<JeeLinkEventListener>();
+	BlockingQueue _queue = new ArrayBlockingQueue(1024);
 
 	SerialPort _serialPort = null;
+	MessageBuffer _messageBuffer = null;
+
+	private class MessageBuffer {
+		private final Logger logger = LoggerFactory.getLogger(MessageBuffer.class);
+
+		private LinkedList _buffer = null;
+		public MessageBuffer() {
+			_buffer = new LinkedList<Byte>();
+		}
+
+		public void addBytes(byte[] byteArray, int numBytesRead) {
+			for (int i = 0; i < numBytesRead; i++)
+			{
+				_buffer.add(byteArray[i]);
+			}
+		}
+
+		public JeeLinkMessage getNextMessage()
+		{
+			//logger.debug("Checking {} bytes", _buffer.size());
+			//Lets scan through our buffer and pull out any valid message (we are searching for our possible start characters (# or .))
+			while( _buffer.size() > 0)
+			{
+				byte byteToInspect = (byte)_buffer.getFirst();
+				if (byteToInspect == 0x23)		//#
+				{
+					int removeToIndex = 0;
+					//We have a comment.  Read to the end of the line
+					for (int i = 0; i < _buffer.size(); i++)
+					{
+						//Check to see if we have a \n that we can read up to
+						byte byteToCheck = (byte)_buffer.get(i);
+						if (byteToCheck == 0x0A)
+						{
+							//We found our line terminator.  Eat all the data up to here
+							removeToIndex = i;
+							break;
+						}
+					}
+
+					if (removeToIndex > 0)
+					{
+						//logger.trace("Comment found - removing bytes from 0 to {}", removeToIndex);
+						byte[] commentBytes = new byte[removeToIndex + 2];
+						for (int i = 0; i < removeToIndex + 1; i++)
+						{
+							commentBytes[i] = (byte)_buffer.getFirst();
+							_buffer.removeFirst();
+						}
+						return new JeeLinkMessage(commentBytes, true);
+					}
+					else
+					{
+						//We didn't find the end ff the comment.  So lets just return
+						return null;
+					}
+				}
+				else if (byteToInspect == 0x2E)		//.
+				{
+					//Check to see if we have 11 more bytes in the buffer
+					if (_buffer.size() >= 12)		//A value packet should be 12 bytes long (10 for data and 2 for \r\n)
+					{
+						//We have enough data for a packet.  So lets snag it all.
+						byte[] readingBytes = new byte[10];
+						for (int i = 0; i < 10; i++)
+						{
+							readingBytes[i] = (byte)_buffer.getFirst();
+							_buffer.removeFirst();
+						}
+
+						//Consume the last two bytes in the packet (they are \r and \n)
+						_buffer.removeFirst();
+						_buffer.removeFirst();
+
+						//logger.trace("Reading found");
+						return new JeeLinkMessage(readingBytes, false);
+					}
+					else
+					{
+						//We don't have enough data.  So lets just return.
+						return null;
+					}
+				}
+				else
+				{
+					//Unknown byte.  Just eat it.
+					//logger.trace("Unknown Byte Found: {}", String.format("0x%02X", (byte)_buffer.getFirst()));
+					_buffer.removeFirst();
+				}
+			}
+
+			return null;
+		}
+	}
 
 	public JeeLinkSerialConnector() {
+	}
+
+	public BlockingQueue messageQueue() {
+		return _queue;
 	}
 
 	@Override
 	public void connect(String device) throws NoSuchPortException, PortInUseException, UnsupportedCommOperationException, IOException {
 
-        logger.debug("Connecting... ({})", device);
+		logger.debug("Connecting... ({})", device);
 
 		CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(device);
 		CommPort commPort = portIdentifier.open(this.getClass().getName(), 2000);
@@ -68,24 +172,46 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 			logger.error("Exception adding listener: {}", e);
 		}
 		_serialPort.notifyOnDataAvailable(true);
+
+		_messageBuffer = new MessageBuffer();
 	}
 
 	@Override
 	public void serialEvent(SerialPortEvent arg0) {
-		logger.debug("Event Type: {}", arg0.getEventType());
-
 		switch (arg0.getEventType())
 		{
 			case SerialPortEvent.DATA_AVAILABLE:
 			{
 				byte[] readBuffer = new byte[40];
-
+				int byteCountRead = 0;
 				try
 				{
 					while (_serialPort.getInputStream().available() > 0)
 					{
-						int numBytes = _serialPort.getInputStream().read(readBuffer);
-						logger.debug("Read {} bytes", numBytes);
+						int numBytesRead = _serialPort.getInputStream().read(readBuffer);
+						_messageBuffer.addBytes(readBuffer, numBytesRead);
+						byteCountRead += numBytesRead;
+					}
+					//logger.debug("Done chunck of reads for this event callback (Read {} bytes)", byteCountRead);
+
+					//Now see if there are any messages to pull out of the buffer we have
+					JeeLinkMessage msg = _messageBuffer.getNextMessage();
+					while (msg != null)
+					{
+						if (!msg.isComment()) {
+							try {
+								_queue.put(msg);
+							}
+							catch (InterruptedException e) {
+							}
+						}
+						else
+						{
+							logger.debug("Comment: {}", new String(msg.data(), StandardCharsets.US_ASCII).trim());
+						}
+
+						//Try and find another message
+						msg = _messageBuffer.getNextMessage();
 					}
 				}
 				catch (IOException e)
@@ -105,44 +231,8 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 			_serialPort.close();
 		}
 		_serialPort = null;
+
+		_messageBuffer = null;
 	}
 
-
-	@Override
-	public synchronized void addEventListener(JeeLinkEventListener listener) {
-		if (!_listeners.contains(listener)) {
-			_listeners.add(listener);
-		}
-	}
-
-	@Override
-	public synchronized void removeEventListener(JeeLinkEventListener listener) {
-		_listeners.remove(listener);
-	}
-
-	private void _sendMsgToListeners(byte[] msg) {
-		try {
-			Iterator<JeeLinkEventListener> iterator = _listeners.iterator();
-
-			while (iterator.hasNext()) {
-				((JeeLinkEventListener) iterator.next()).packetReceived(msg);
-			}
-
-		} catch (Exception e) {
-			logger.error("Event listener invoking error", e);
-		}
-	}
-
-	private void _sendErrorToListeners(String error) {
-		try {
-			Iterator<JeeLinkEventListener> iterator = _listeners.iterator();
-
-			while (iterator.hasNext()) {
-				((JeeLinkEventListener) iterator.next()).errorOccured(error);
-			}
-
-		} catch (Exception e) {
-			logger.error("Event listener invoking error", e);
-		}
-	}
 }
