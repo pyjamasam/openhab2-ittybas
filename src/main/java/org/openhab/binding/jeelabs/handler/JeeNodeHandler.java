@@ -11,6 +11,8 @@ import static org.openhab.binding.jeelabs.JeeLabsBindingConstants.*;
 
 import java.util.Collections;
 import java.util.Set;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.openhab.binding.jeelabs.handler.JeeLinkHandler;
 import org.openhab.binding.jeelabs.internal.JeeNodeDataListener;
@@ -27,6 +29,7 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.types.UnDefType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,10 +58,14 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
 
     @Override
     public void initialize() {
+		updateState("temperature", UnDefType.UNDEF);
+		updateState("relativehumidity", UnDefType.UNDEF);
+
         if (getConfig().get(NODE_ID) != null) {
 			this._nodeId = Integer.parseInt((String) getConfig().get(NODE_ID));
             if (_getBridgeHandler() != null) {
                 updateStatus(ThingStatus.ONLINE);
+
                 logger.debug("initialized");
             }
             else
@@ -112,12 +119,27 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
 			{
 				case 4: {
 					//Temperature
-					updateState("temperature", new DecimalType(88.4));
+					//This data should come in as a float
+					if (reading.dataType() == JeeNodeReading.JeeNodeReadingDataType.FLOAT) {
+						BigDecimal decimalValue = new BigDecimal(Double.toString(reading.doubleValue())).setScale(2, RoundingMode.HALF_UP);
+						updateState("temperature", new DecimalType(decimalValue));
+					}
+					else {
+						//This is an unexpected datat type for this channel. Update the state to reflect such
+						updateState("temperature", UnDefType.UNDEF);
+					}
 					break;
 				}
 				case 8: {
 					//Humidity
-					updateState("relativehumidity", new DecimalType(44.8));
+					if (reading.dataType() == JeeNodeReading.JeeNodeReadingDataType.FLOAT) {
+						BigDecimal decimalValue = new BigDecimal(Double.toString(reading.doubleValue())).setScale(2, RoundingMode.HALF_UP);
+						updateState("relativehumidity", new DecimalType(decimalValue));
+					}
+					else {
+						//This is an unexpected datat type for this channel. Update the state to reflect such
+						updateState("relativehumidity", UnDefType.UNDEF);
+					}
 					break;
 				}
 			}

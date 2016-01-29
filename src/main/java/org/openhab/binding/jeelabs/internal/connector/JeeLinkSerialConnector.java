@@ -207,7 +207,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 						}
 						else
 						{
-							logger.debug("Comment: {}", new String(msg.data(), StandardCharsets.US_ASCII).trim());
+							logger.trace("Comment: {}", new String(msg.data(), StandardCharsets.US_ASCII).trim());
 						}
 
 						//Try and find another message
