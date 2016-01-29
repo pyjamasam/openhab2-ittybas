@@ -32,7 +32,7 @@ public class JeeNodeReading
 		_nodeIdentifier = nodeByte.intValue();
 
 		//	valueType = parsedLine[1]
-		_valueType = ((message.data()[2] & 0xff) << 8) | (message.data()[3] & 0xff);
+		_valueType = ((message.data()[3] & 0xff) << 8) | (message.data()[2] & 0xff);
 
 		//TODO: data...
 		//	dataType = parsedLine[2]

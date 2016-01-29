@@ -41,6 +41,17 @@ import org.slf4j.LoggerFactory;
  */
 public class JeeLinkHandler extends BaseBridgeHandler {
 
+	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	public static String bytesToHex(byte[] bytes) {
+	    char[] hexChars = new char[bytes.length * 2];
+	    for ( int j = 0; j < bytes.length; j++ ) {
+	        int v = bytes[j] & 0xFF;
+	        hexChars[j * 2] = hexArray[v >>> 4];
+	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+	    }
+	    return new String(hexChars);
+	}
+
 	public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Collections.singleton(THING_TYPE_JEELINK);
 	private Logger logger = LoggerFactory.getLogger(JeeLinkHandler.class);
 
@@ -71,11 +82,22 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 				{
 					JeeLinkMessage message = (JeeLinkMessage)_connector.messageQueue().take();
 
+					String hexString = bytesToHex(message.data());
+					//logger.debug("Hex Bytes: {}", hexString);
+
 					//Lets convert this message data to a reading (this does the parsing)
 					JeeNodeReading reading = new JeeNodeReading(message);
-					logger.debug("Reading is for node: {}, valuetype: {}", reading.nodeIdentifier(), reading.valueType());
+					//logger.debug("Reading is for node: {}, valuetype: {}", reading.nodeIdentifier(), reading.valueType());
 
-					//TODO: Find any nodes that this bridge knows about and check to see who needs this message
+					for (JeeNodeDataListener dataListener : _dataListeners) {
+						try {
+							dataListener.dataUpdate(reading);
+						} catch (Exception e) {
+							logger.error(
+									"An exception occurred while calling dataUpdate",
+									e);
+						}
+					}
 				}
 			} catch (InterruptedException e) {
 				logger.debug("interrupted");
@@ -158,13 +180,13 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 	}
 
 	public Boolean registerNode(JeeNodeDataListener dataListener) {
-        if (dataListener == null) {
-            throw new NullPointerException("It's not allowed to pass a null dataListener.");
-        }
-        return _dataListeners.add(dataListener);
-    }
+		if (dataListener == null) {
+			throw new NullPointerException("It's not allowed to pass a null dataListener.");
+		}
+		return _dataListeners.add(dataListener);
+	}
 
-    public Boolean unregisterNode(JeeNodeDataListener dataListener) {
-         return _dataListeners.remove(dataListener);
-    }
+	public Boolean unregisterNode(JeeNodeDataListener dataListener) {
+		 return _dataListeners.remove(dataListener);
+	}
 }

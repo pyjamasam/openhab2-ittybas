@@ -14,6 +14,8 @@ import java.util.Set;
 
 import org.openhab.binding.jeelabs.handler.JeeLinkHandler;
 import org.openhab.binding.jeelabs.internal.JeeNodeDataListener;
+import org.openhab.binding.jeelabs.internal.JeeNodeReading;
+
 
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -24,6 +26,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +43,7 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
     private Logger logger = LoggerFactory.getLogger(JeeNodeHandler.class);
 
     private JeeLinkHandler _bridgeHandler;
-    private String _nodeId;
+    private int _nodeId = 0;
 
 	public JeeNodeHandler(Thing thing) {
 		super(thing);
@@ -52,8 +55,8 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
 
     @Override
     public void initialize() {
-        this._nodeId = (String) getConfig().get(NODE_ID);
-        if (this._nodeId != null) {
+        if (getConfig().get(NODE_ID) != null) {
+			this._nodeId = Integer.parseInt((String) getConfig().get(NODE_ID));
             if (_getBridgeHandler() != null) {
                 updateStatus(ThingStatus.ONLINE);
                 logger.debug("initialized");
@@ -72,11 +75,11 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
     @Override
     public void dispose() {
         logger.debug("disposed");
-        if (this._nodeId != null) {
+        if (this._nodeId != 0) {
             if (this._bridgeHandler != null) {
                 this._bridgeHandler.unregisterNode(this);
             }
-            this._nodeId = null;
+            this._nodeId = 0;
         }
     }
 
@@ -97,4 +100,27 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
         }
         return this._bridgeHandler;
     }
+
+	public void dataUpdate(JeeNodeReading reading)
+	{
+		if (reading.nodeIdentifier() == this._nodeId)
+		{
+			//TODO: deal with this reading and update the appropriate channel with the data
+
+			//Map our valueTypes to openhabs channels
+			switch (reading.valueType())
+			{
+				case 4: {
+					//Temperature
+					updateState("temperature", new DecimalType(88.4));
+					break;
+				}
+				case 8: {
+					//Humidity
+					updateState("relativehumidity", new DecimalType(44.8));
+					break;
+				}
+			}
+		}
+	}
 }

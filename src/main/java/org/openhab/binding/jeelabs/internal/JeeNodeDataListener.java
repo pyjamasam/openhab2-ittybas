@@ -9,7 +9,9 @@
 
 package org.openhab.binding.jeelabs.internal;
 
+import org.openhab.binding.jeelabs.internal.JeeNodeReading;
+
 public interface JeeNodeDataListener
 {
-
+	public void dataUpdate(JeeNodeReading reading);
 }
