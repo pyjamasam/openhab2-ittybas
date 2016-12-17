@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<thing:thing-descriptions bindingId="jeelabs"
+<thing:thing-descriptions bindingId="ittybas"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
         xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
 
     <bridge-type id="jeelink">
-        <label>JeeLabs Jeelink Bridge</label>
+        <label>ittyBAS Jeelink Bridge</label>
         <description>...</description>
 
         <config-description>
-            <parameter name="serialPort" type="text" required="true">
+            <parameter name="serialPort" type="text" required="false">
                 <label>Serial Port</label>
                 <description>Serial port where the JeeLink transceiver is connected.</description>
             </parameter>
@@ -21,7 +21,7 @@
             <bridge-type-ref id="jeelink" />
         </supported-bridge-type-refs>
 
-        <label>JeeLabs Jeenode</label>
+        <label>ittyBAS Jeenode</label>
         <description>...</description>
 
         <config-description>

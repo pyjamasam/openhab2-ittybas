@@ -5,21 +5,21 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.jeelabs.handler;
+package org.openhab.binding.ittybas.handler;
 
-import static org.openhab.binding.jeelabs.JeeLabsBindingConstants.*;
+import static org.openhab.binding.ittybas.ittyBASBindingConstants.*;
 
 import java.util.Collections;
 import java.util.Set;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.openhab.binding.jeelabs.internal.connector.JeeLinkConnectorInterface;
-import org.openhab.binding.jeelabs.internal.connector.JeeLinkSerialConnector;
-import org.openhab.binding.jeelabs.internal.connector.JeeLinkTCPConnector;
-import org.openhab.binding.jeelabs.internal.JeeLinkMessage;
-import org.openhab.binding.jeelabs.internal.JeeNodeReading;
-import org.openhab.binding.jeelabs.internal.JeeNodeDataListener;
+import org.openhab.binding.ittybas.internal.connector.ittyBASConnectorInterface;
+import org.openhab.binding.ittybas.internal.connector.ittyBASSerialConnector;
+import org.openhab.binding.ittybas.internal.connector.ittyBASNetworkConnector;
+import org.openhab.binding.ittybas.internal.ittyBASMessage;
+import org.openhab.binding.ittybas.internal.ittyBASReading;
+import org.openhab.binding.ittybas.internal.ittyBASDataListener;
 
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -34,12 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link JeeLinkHandler} is responsible for handling commands, which are
+ * The {@link ittyBASLinkHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author Chris Whiteford - Initial contribution
  */
-public class JeeLinkHandler extends BaseBridgeHandler {
+public class ittyBASLinkHandler extends BaseBridgeHandler {
 
 	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 	public static String bytesToHex(byte[] bytes) {
@@ -53,18 +53,18 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 	}
 
 	public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Collections.singleton(THING_TYPE_JEELINK);
-	private Logger logger = LoggerFactory.getLogger(JeeLinkHandler.class);
+	private Logger logger = LoggerFactory.getLogger(ittyBASLinkHandler.class);
 
-	private List<JeeNodeDataListener> _dataListeners = new CopyOnWriteArrayList<>();
+	private List<ittyBASDataListener> _dataListeners = new CopyOnWriteArrayList<>();
 
-	private JeeLinkConnectorInterface _connector = null;
+	private ittyBASConnectorInterface _connector = null;
 	private DataProcessor _dataProcessor = null;
 
 	private class DataProcessor extends Thread  {
 		private Logger logger = LoggerFactory.getLogger(DataProcessor.class);
 
-		JeeLinkHandler _handler = null;
-		DataProcessor(JeeLinkHandler handler) {
+		ittyBASLinkHandler _handler = null;
+		DataProcessor(ittyBASLinkHandler handler) {
 			_handler = handler;
 		}
 
@@ -76,20 +76,20 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 		}
 
 		public void run() {
-			logger.debug("DataProcessor started");
+			logger.debug("DataProcessor for " + _handler.getClass().getSimpleName() + " started");
 			try {
 				while (true)	//Do this forever
 				{
-					JeeLinkMessage message = (JeeLinkMessage)_connector.messageQueue().take();
+					ittyBASMessage message = (ittyBASMessage)_connector.messageQueue().take();
 
 					String hexString = bytesToHex(message.data());
 					//logger.debug("Hex Bytes: {}", hexString);
 
 					//Lets convert this message data to a reading (this does the parsing)
-					JeeNodeReading reading = new JeeNodeReading(message);
+					ittyBASReading reading = new ittyBASReading(message);
 					//logger.debug("Reading is for node: {}, valuetype: {}", reading.nodeIdentifier(), reading.valueType());
 
-					for (JeeNodeDataListener dataListener : _dataListeners) {
+					for (ittyBASDataListener dataListener : _dataListeners) {
 						try {
 							dataListener.dataUpdate(reading);
 						} catch (Exception e) {
@@ -102,11 +102,11 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 			} catch (InterruptedException e) {
 				logger.debug("interrupted");
 			}
-			logger.debug("DataProcessor done");
+			logger.debug("DataProcessor for " + _handler.getClass().getSimpleName() + " done");
 		}
 	}
 
-	public JeeLinkHandler(Bridge bridge) {
+	public ittyBASLinkHandler(Bridge bridge) {
 		super(bridge);
 
 		_dataProcessor = new DataProcessor(this);
@@ -120,13 +120,13 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 	public void initialize() {
 		if (getConfig().get(SERIAL_PORT) != null) {
 			if (_connector == null) {
-				_connector = new JeeLinkSerialConnector();
+				_connector = new ittyBASSerialConnector();
 			}
 
 			if (_connector != null) {
-				_connector.disconnect();
+				_connector.shutdown();
 				try {
-					_connector.connect((String) getConfig().get(SERIAL_PORT));
+					_connector.setup((String) getConfig().get(SERIAL_PORT));
 
 					_dataProcessor.start();
 
@@ -144,16 +144,42 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 			}
 			else
 			{
-				updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Connection == null");
+				updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Connection == null after trying to create it");
 			}
 		}
-		else if (getConfig().get(IP_ADDRESS) != null)
+		else if (getConfig().get(LISTEN_PORT) != null)
 		{
-			updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.CONFIGURATION_ERROR, "TCP connection not yet supported.");
+			if (_connector == null) {
+				_connector = new ittyBASNetworkConnector();
+			}
+
+			if (_connector != null) {
+				_connector.shutdown();
+				try {
+					_connector.setup((String) getConfig().get(LISTEN_PORT));
+
+					_dataProcessor.start();
+
+					updateStatus(ThingStatus.ONLINE);
+				} catch (Exception e) {
+					logger.error("Exception trying to connect: {}", e);
+					updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Error Connecting");
+				} catch (UnsatisfiedLinkError e) {
+					logger.error(
+							"Error occured when trying to load native library for OS '{}' version '{}', processor '{}'",
+							System.getProperty("os.name"),
+							System.getProperty("os.version"),
+							System.getProperty("os.arch"), e);
+				}
+			}
+			else
+			{
+				updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Connection == null after trying to create it");
+			}
 		}
 		else
 		{
-			updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.CONFIGURATION_ERROR, "Cannot connect to jeelink. serialPort or ipAddress is not set.");
+			updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.CONFIGURATION_ERROR, "Cannot connect to jeelink. serialPort or listenPort is not set.");
 		}
 	}
 
@@ -174,19 +200,19 @@ public class JeeLinkHandler extends BaseBridgeHandler {
 		}
 
 		if (_connector != null) {
-			_connector.disconnect();
+			_connector.shutdown();
 			_connector = null;
 		}
 	}
 
-	public Boolean registerNode(JeeNodeDataListener dataListener) {
+	public Boolean registerNode(ittyBASDataListener dataListener) {
 		if (dataListener == null) {
 			throw new NullPointerException("It's not allowed to pass a null dataListener.");
 		}
 		return _dataListeners.add(dataListener);
 	}
 
-	public Boolean unregisterNode(JeeNodeDataListener dataListener) {
+	public Boolean unregisterNode(ittyBASDataListener dataListener) {
 		 return _dataListeners.remove(dataListener);
 	}
 }

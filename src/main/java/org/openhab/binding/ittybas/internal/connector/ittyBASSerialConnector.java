@@ -8,7 +8,7 @@
  */
 
  //This code is based very heavly on the code for the rfxcom binding. I say heavly, but really its copy and paste
-package org.openhab.binding.jeelabs.internal.connector;
+package org.openhab.binding.ittybas.internal.connector;
 
 import gnu.io.*;
 
@@ -32,20 +32,20 @@ import java.io.DataInputStream;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.openhab.binding.jeelabs.internal.JeeLinkMessage;
+import org.openhab.binding.ittybas.internal.ittyBASMessage;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JeeLink connector for serial port communication.
+ * ittyBAS JeeLink connector for serial port communication.
  *
  * @author Chris Whiteford - Initial contribution
  */
-public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, SerialPortEventListener {
+public class ittyBASSerialConnector implements ittyBASConnectorInterface, SerialPortEventListener {
 
-	private static final Logger logger = LoggerFactory.getLogger(JeeLinkSerialConnector.class);
+	private static final Logger logger = LoggerFactory.getLogger(ittyBASSerialConnector.class);
 
 	BlockingQueue _queue = new ArrayBlockingQueue(1024);
 
@@ -67,7 +67,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 			}
 		}
 
-		public JeeLinkMessage getNextMessage()
+		public ittyBASMessage getNextMessage()
 		{
 			//logger.debug("Checking {} bytes", _buffer.size());
 			//Lets scan through our buffer and pull out any valid message (we are searching for our possible start characters (# or .))
@@ -99,7 +99,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 							commentBytes[i] = (byte)_buffer.getFirst();
 							_buffer.removeFirst();
 						}
-						return new JeeLinkMessage(commentBytes, true);
+						return new ittyBASMessage(commentBytes, true);
 					}
 					else
 					{
@@ -125,7 +125,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 						_buffer.removeFirst();
 
 						//logger.trace("Reading found");
-						return new JeeLinkMessage(readingBytes, false);
+						return new ittyBASMessage(readingBytes, false);
 					}
 					else
 					{
@@ -145,7 +145,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 		}
 	}
 
-	public JeeLinkSerialConnector() {
+	public ittyBASSerialConnector() {
 	}
 
 	public BlockingQueue messageQueue() {
@@ -153,7 +153,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 	}
 
 	@Override
-	public void connect(String device) throws NoSuchPortException, PortInUseException, UnsupportedCommOperationException, IOException {
+	public void setup(String device) throws NoSuchPortException, PortInUseException, UnsupportedCommOperationException, IOException {
 
 		logger.debug("Connecting... ({})", device);
 
@@ -195,7 +195,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 					//logger.debug("Done chunck of reads for this event callback (Read {} bytes)", byteCountRead);
 
 					//Now see if there are any messages to pull out of the buffer we have
-					JeeLinkMessage msg = _messageBuffer.getNextMessage();
+					ittyBASMessage msg = _messageBuffer.getNextMessage();
 					while (msg != null)
 					{
 						if (!msg.isComment()) {
@@ -223,7 +223,7 @@ public class JeeLinkSerialConnector implements JeeLinkConnectorInterface, Serial
 	}
 
 	@Override
-	public void disconnect() {
+	public void shutdown() {
 		logger.debug("Disconnecting...");
 
 		if (_serialPort != null) {

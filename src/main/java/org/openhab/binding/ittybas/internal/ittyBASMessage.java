@@ -7,15 +7,15 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.openhab.binding.jeelabs.internal;
+package org.openhab.binding.ittybas.internal;
 
 import java.util.Arrays;
 
-public class JeeLinkMessage {
+public class ittyBASMessage {
 	private Boolean _isComment = false;
 	private byte[] _data = null;
 
-	public JeeLinkMessage(byte[] data, Boolean isComment) {
+	public ittyBASMessage(byte[] data, Boolean isComment) {
 		_isComment = isComment;
 
 		_data = Arrays.copyOf(data, data.length);

@@ -7,11 +7,11 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.openhab.binding.jeelabs.internal;
+package org.openhab.binding.ittybas.internal;
 
-import org.openhab.binding.jeelabs.internal.JeeNodeReading;
+import org.openhab.binding.ittybas.internal.ittyBASReading;
 
-public interface JeeNodeDataListener
+public interface ittyBASDataListener
 {
-	public void dataUpdate(JeeNodeReading reading);
+	public void dataUpdate(ittyBASReading reading);
 }

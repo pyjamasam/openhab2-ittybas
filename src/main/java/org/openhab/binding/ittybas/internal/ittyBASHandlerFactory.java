@@ -5,15 +5,15 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.jeelabs.internal;
+package org.openhab.binding.ittybas.internal;
 
-import static org.openhab.binding.jeelabs.JeeLabsBindingConstants.*;
+import static org.openhab.binding.ittybas.ittyBASBindingConstants.*;
 
 import java.util.Collections;
 import java.util.Set;
 
-import org.openhab.binding.jeelabs.handler.JeeLinkHandler;
-import org.openhab.binding.jeelabs.handler.JeeNodeHandler;
+import org.openhab.binding.ittybas.handler.ittyBASLinkHandler;
+import org.openhab.binding.ittybas.handler.ittyBASNodeHandler;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.config.core.Configuration;
@@ -28,29 +28,30 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Sets;
 
 /**
- * The {@link JeeLabsHandlerFactory} is responsible for creating things and thing
+ * The {@link ittyBASHandlerFactory} is responsible for creating things and thing
  * handlers.
  *
  * @author Chris Whiteford - Initial contribution
  */
-public class JeeLabsHandlerFactory extends BaseThingHandlerFactory {
+public class ittyBASHandlerFactory extends BaseThingHandlerFactory {
 
-    private final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Sets.union(JeeLinkHandler.SUPPORTED_THING_TYPES, JeeNodeHandler.SUPPORTED_THING_TYPES);
+    private final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Sets.union(ittyBASLinkHandler.SUPPORTED_THING_TYPES, ittyBASNodeHandler.SUPPORTED_THING_TYPES);
 
-    private Logger logger = LoggerFactory.getLogger(JeeLabsHandlerFactory.class);
+    private Logger logger = LoggerFactory.getLogger(ittyBASHandlerFactory.class);
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
         return SUPPORTED_THING_TYPES.contains(thingTypeUID);
     }
 
+
     @Override
     protected ThingHandler createHandler(Thing thing) {
-        if (JeeLinkHandler.SUPPORTED_THING_TYPES.contains(thing.getThingTypeUID())) {
-            JeeLinkHandler handler = new JeeLinkHandler((Bridge) thing);
+        if (ittyBASLinkHandler.SUPPORTED_THING_TYPES.contains(thing.getThingTypeUID())) {
+            ittyBASLinkHandler handler = new ittyBASLinkHandler((Bridge) thing);
             return handler;
-        } else if (JeeNodeHandler.SUPPORTED_THING_TYPES.contains(thing.getThingTypeUID())) {
-            JeeNodeHandler handler = new JeeNodeHandler(thing);
+        } else if (ittyBASNodeHandler.SUPPORTED_THING_TYPES.contains(thing.getThingTypeUID())) {
+            ittyBASNodeHandler handler = new ittyBASNodeHandler(thing);
             return handler;
         } else {
             return null;

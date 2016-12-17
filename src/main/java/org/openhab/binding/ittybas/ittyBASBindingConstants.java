@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.jeelabs;
+package org.openhab.binding.ittybas;
 
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
@@ -15,9 +15,9 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
  *
  * @author Chris Whiteford - Initial contribution
  */
-public class JeeLabsBindingConstants {
+public class ittyBASBindingConstants {
 
-    public static final String BINDING_ID = "jeelabs";
+    public static final String BINDING_ID = "ittybas";
 
     // List of all Thing Type UIDs
     public final static ThingTypeUID THING_TYPE_JEELINK = new ThingTypeUID(BINDING_ID, "jeelink");
@@ -28,7 +28,7 @@ public class JeeLabsBindingConstants {
 
     // Bridge config properties
     public static final String SERIAL_PORT = "serialPort";
-    public static final String IP_ADDRESS = "ipAddress";
+    public static final String LISTEN_PORT = "listenPort";
     public static final String NODE_ID = "nodeId";
 
 }

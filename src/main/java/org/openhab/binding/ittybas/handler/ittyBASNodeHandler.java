@@ -5,18 +5,18 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.jeelabs.handler;
+package org.openhab.binding.ittybas.handler;
 
-import static org.openhab.binding.jeelabs.JeeLabsBindingConstants.*;
+import static org.openhab.binding.ittybas.ittyBASBindingConstants.*;
 
 import java.util.Collections;
 import java.util.Set;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import org.openhab.binding.jeelabs.handler.JeeLinkHandler;
-import org.openhab.binding.jeelabs.internal.JeeNodeDataListener;
-import org.openhab.binding.jeelabs.internal.JeeNodeReading;
+import org.openhab.binding.ittybas.handler.ittyBASLinkHandler;
+import org.openhab.binding.ittybas.internal.ittyBASDataListener;
+import org.openhab.binding.ittybas.internal.ittyBASReading;
 
 
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -34,21 +34,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link JeeNodeHandler} is responsible for handling commands, which are
+ * The {@link ittyBASNodeHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author Chris Whiteford - Initial contribution
  */
-public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListener {
+public class ittyBASNodeHandler extends BaseThingHandler implements ittyBASDataListener {
 
     public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Collections.singleton(THING_TYPE_JEENODE);
+    private Logger logger = LoggerFactory.getLogger(ittyBASNodeHandler.class);
 
-    private Logger logger = LoggerFactory.getLogger(JeeNodeHandler.class);
-
-    private JeeLinkHandler _bridgeHandler;
+    private ittyBASLinkHandler _bridgeHandler;
     private int _nodeId = 0;
 
-	public JeeNodeHandler(Thing thing) {
+	public ittyBASNodeHandler(Thing thing) {
 		super(thing);
 	}
 
@@ -62,7 +61,7 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
 		updateState("relativehumidity", UnDefType.UNDEF);
 
         if (getConfig().get(NODE_ID) != null) {
-			this._nodeId = Integer.parseInt((String) getConfig().get(NODE_ID));
+          this._nodeId = Integer.parseInt((String) getConfig().get(NODE_ID));
             if (_getBridgeHandler() != null) {
                 updateStatus(ThingStatus.ONLINE);
 
@@ -91,15 +90,15 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
     }
 
 
-    private synchronized JeeLinkHandler _getBridgeHandler() {
+    private synchronized ittyBASLinkHandler _getBridgeHandler() {
         if (this._bridgeHandler == null) {
             Bridge bridge = getBridge();
             if (bridge == null) {
                 return null;
             }
             ThingHandler handler = bridge.getHandler();
-            if (handler instanceof JeeLinkHandler) {
-                this._bridgeHandler = (JeeLinkHandler) handler;
+            if (handler instanceof ittyBASLinkHandler) {
+                this._bridgeHandler = (ittyBASLinkHandler) handler;
                 this._bridgeHandler.registerNode(this);
             } else {
                 return null;
@@ -108,36 +107,49 @@ public class JeeNodeHandler extends BaseThingHandler implements JeeNodeDataListe
         return this._bridgeHandler;
     }
 
-	public void dataUpdate(JeeNodeReading reading)
+	public void dataUpdate(ittyBASReading reading)
 	{
 		if (reading.nodeIdentifier() == this._nodeId)
 		{
-			//TODO: deal with this reading and update the appropriate channel with the data
-
+			//deal with this reading and update the appropriate channel with the data
 			//Map our valueTypes to openhabs channels
 			switch (reading.valueType())
 			{
 				case 4: {
-					//Temperature
+          //Temperature
 					//This data should come in as a float
-					if (reading.dataType() == JeeNodeReading.JeeNodeReadingDataType.FLOAT) {
+					if (reading.dataType() == ittyBASReading.ittyBASReadingDataType.FLOAT) {
 						BigDecimal decimalValue = new BigDecimal(Double.toString(reading.doubleValue())).setScale(2, RoundingMode.HALF_UP);
 						updateState("temperature", new DecimalType(decimalValue));
 					}
 					else {
-						//This is an unexpected datat type for this channel. Update the state to reflect such
+						//This is an unexpected data type for this channel. Update the state to reflect such
 						updateState("temperature", UnDefType.UNDEF);
 					}
 					break;
 				}
+
+        case 6: {
+					//Battery Voltage
+					if (reading.dataType() == ittyBASReading.ittyBASReadingDataType.FLOAT) {
+						BigDecimal decimalValue = new BigDecimal(Double.toString(reading.doubleValue())).setScale(2, RoundingMode.HALF_UP);
+						updateState("battery-voltage", new DecimalType(decimalValue));
+					}
+					else {
+						//This is an unexpected data type for this channel. Update the state to reflect such
+						updateState("battery-voltage", UnDefType.UNDEF);
+					}
+					break;
+				}
+
 				case 8: {
 					//Humidity
-					if (reading.dataType() == JeeNodeReading.JeeNodeReadingDataType.FLOAT) {
+					if (reading.dataType() == ittyBASReading.ittyBASReadingDataType.FLOAT) {
 						BigDecimal decimalValue = new BigDecimal(Double.toString(reading.doubleValue())).setScale(2, RoundingMode.HALF_UP);
 						updateState("relativehumidity", new DecimalType(decimalValue));
 					}
 					else {
-						//This is an unexpected datat type for this channel. Update the state to reflect such
+						//This is an unexpected data type for this channel. Update the state to reflect such
 						updateState("relativehumidity", UnDefType.UNDEF);
 					}
 					break;

@@ -7,27 +7,27 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.openhab.binding.jeelabs.internal;
+package org.openhab.binding.ittybas.internal;
 
-import org.openhab.binding.jeelabs.internal.JeeLinkMessage;
+import org.openhab.binding.ittybas.internal.ittyBASMessage;
 import java.nio.ByteBuffer;
 
 
-public class JeeNodeReading
+public class ittyBASReading
 {
-	public enum JeeNodeReadingDataType {
+	public enum ittyBASReadingDataType {
 	    UNKNOWN, UNSIGNED_LONG, LONG, FLOAT, BINARY
 	}
 
 	private int _nodeIdentifier;
 	private int _valueType;
-	private JeeNodeReadingDataType _dataType;
+	private ittyBASReadingDataType _dataType;
 
 	private long _longValue;
 	private double _doubleValue;
 
 
-	public JeeNodeReading(JeeLinkMessage message) {
+	public ittyBASReading(ittyBASMessage message) {
 		//	formatString = 'xBHH4s'
 
 		//	nodeIdentifier = parsedLine[0]
@@ -38,7 +38,7 @@ public class JeeNodeReading
 		_valueType = ((message.data()[3] & 0xff) << 8) | (message.data()[2] & 0xff);
 
 		//	dataType = parsedLine[2]
-		_dataType = JeeNodeReadingDataType.values()[((message.data()[5] & 0xff) << 8) | (message.data()[4] & 0xff)];
+		_dataType = ittyBASReadingDataType.values()[((message.data()[5] & 0xff) << 8) | (message.data()[4] & 0xff)];
 
 		switch (_dataType)
 		{
@@ -81,7 +81,7 @@ public class JeeNodeReading
 		return _valueType;
 	}
 
-	public JeeNodeReadingDataType dataType() {
+	public ittyBASReadingDataType dataType() {
 		return _dataType;
 	}
 
