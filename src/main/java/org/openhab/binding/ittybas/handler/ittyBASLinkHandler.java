@@ -1,218 +1,182 @@
 /**
- * Copyright (c) 2014-2015 openHAB UG (haftungsbeschraenkt) and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * Copyright (c) 2014,2017 by the respective copyright holders.
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.ittybas.handler;
 
 import static org.openhab.binding.ittybas.ittyBASBindingConstants.*;
-
-import java.util.Collections;
-import java.util.Set;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.openhab.binding.ittybas.internal.connector.ittyBASConnectorInterface;
-import org.openhab.binding.ittybas.internal.connector.ittyBASSerialConnector;
-import org.openhab.binding.ittybas.internal.connector.ittyBASNetworkConnector;
-import org.openhab.binding.ittybas.internal.ittyBASMessage;
-import org.openhab.binding.ittybas.internal.ittyBASReading;
 import org.openhab.binding.ittybas.internal.ittyBASDataListener;
+import org.openhab.binding.ittybas.internal.ittyBASDataProcessor;
 
+
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
-import org.eclipse.smarthome.core.thing.Bridge;
+import org.eclipse.smarthome.core.thing.binding.ThingHandler;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
-import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.UnDefType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.BlockingQueue;
+
+import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
- * The {@link ittyBASLinkHandler} is responsible for handling commands, which are
+ * The {@link ittyBASHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author Chris Whiteford - Initial contribution
  */
-public class ittyBASLinkHandler extends BaseBridgeHandler {
+@NonNullByDefault public class ittyBASLinkHandler extends BaseBridgeHandler 
+{
+    public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Collections.singleton(THING_TYPE_JEELINK);
+    private final Logger logger = LoggerFactory.getLogger(ittyBASLinkHandler.class);
 
-	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-	public static String bytesToHex(byte[] bytes) {
-	    char[] hexChars = new char[bytes.length * 2];
-	    for ( int j = 0; j < bytes.length; j++ ) {
-	        int v = bytes[j] & 0xFF;
-	        hexChars[j * 2] = hexArray[v >>> 4];
-	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-	    }
-	    return new String(hexChars);
-	}
+    private List<ittyBASDataListener> _dataListeners = new CopyOnWriteArrayList<>();
+    private org.openhab.binding.ittybas.internal. @Nullable ittyBASDataProcessor _dataProcessor = null;
+    private org.openhab.binding.ittybas.internal.connector. @Nullable ittyBASConnectorInterface _connector = null;    
 
-	public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES = Collections.singleton(THING_TYPE_JEELINK);
-	private Logger logger = LoggerFactory.getLogger(ittyBASLinkHandler.class);
+    public ittyBASLinkHandler(Bridge bridge) 
+    {
+        super(bridge);
 
-	private List<ittyBASDataListener> _dataListeners = new CopyOnWriteArrayList<>();
+        logger.debug("Created an instance of a LinkHandler: {}", this);
+    }
 
-	private ittyBASConnectorInterface _connector = null;
-	private DataProcessor _dataProcessor = null;
+    @Override public void handleCommand(ChannelUID channelUID, Command command) 
+    {
+    }
 
-	private class DataProcessor extends Thread  {
-		private Logger logger = LoggerFactory.getLogger(DataProcessor.class);
+    @Override public void initialize() 
+    {
+        logger.debug("Starting initialize of LinkHandler: {}", this);
 
-		ittyBASLinkHandler _handler = null;
-		DataProcessor(ittyBASLinkHandler handler) {
-			_handler = handler;
-		}
-
-		@Override
-		public void interrupt() {
-			super.interrupt();
-
-			logger.debug("interrupting...");
-		}
-
-		public void run() {
-			logger.debug("DataProcessor for " + _handler.getClass().getSimpleName() + " started");
-			try {
-				while (true)	//Do this forever
-				{
-					ittyBASMessage message = (ittyBASMessage)_connector.messageQueue().take();
-
-					String hexString = bytesToHex(message.data());
-					//logger.debug("Hex Bytes: {}", hexString);
-
-					//Lets convert this message data to a reading (this does the parsing)
-					ittyBASReading reading = new ittyBASReading(message);
-					//logger.debug("Reading is for node: {}, valuetype: {}", reading.nodeIdentifier(), reading.valueType());
-
-					for (ittyBASDataListener dataListener : _dataListeners) {
-						try {
-							dataListener.dataUpdate(reading);
-						} catch (Exception e) {
-							logger.error(
-									"An exception occurred while calling dataUpdate",
-									e);
-						}
-					}
-				}
-			} catch (InterruptedException e) {
-				logger.debug("interrupted");
-			}
-			logger.debug("DataProcessor for " + _handler.getClass().getSimpleName() + " done");
-		}
-	}
-
-	public ittyBASLinkHandler(Bridge bridge) {
-		super(bridge);
-
-		_dataProcessor = new DataProcessor(this);
-	}
-
-	@Override
-	public void handleCommand(ChannelUID channelUID, Command command) {
-	}
-
-	@Override
-	public void initialize() {
-		if (getConfig().get(SERIAL_PORT) != null) {
-			if (_connector == null) {
-				_connector = new ittyBASSerialConnector();
-			}
-
-			if (_connector != null) {
-				_connector.shutdown();
-				try {
-					_connector.setup((String) getConfig().get(SERIAL_PORT));
-
-					_dataProcessor.start();
-
-					updateStatus(ThingStatus.ONLINE);
-				} catch (Exception e) {
-					logger.error("Exception trying to connect: {}", e);
-					updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Error Connecting");
-				} catch (UnsatisfiedLinkError e) {
-					logger.error(
-							"Error occured when trying to load native library for OS '{}' version '{}', processor '{}'",
-							System.getProperty("os.name"),
-							System.getProperty("os.version"),
-							System.getProperty("os.arch"), e);
-				}
-			}
-			else
-			{
-				updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Connection == null after trying to create it");
-			}
-		}
-		else if (getConfig().get(LISTEN_PORT) != null)
+        Thing thisThing = this.getThing();
+        thisThing.setLabel("ittyBAS Jeelink - " + thisThing.getUID().getId()); 
+        
+        String portString = "";
+        if (getConfig().get(SERIAL_PORT) != null) 
 		{
-			if (_connector == null) {
-				_connector = new ittyBASNetworkConnector();
-			}
-
-			if (_connector != null) {
-				_connector.shutdown();
-				try {
-					_connector.setup((String) getConfig().get(LISTEN_PORT));
-
-					_dataProcessor.start();
-
-					updateStatus(ThingStatus.ONLINE);
-				} catch (Exception e) {
-					logger.error("Exception trying to connect: {}", e);
-					updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Error Connecting");
-				} catch (UnsatisfiedLinkError e) {
-					logger.error(
-							"Error occured when trying to load native library for OS '{}' version '{}', processor '{}'",
-							System.getProperty("os.name"),
-							System.getProperty("os.version"),
-							System.getProperty("os.arch"), e);
-				}
-			}
-			else
-			{
-				updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "Connection == null after trying to create it");
-			}
-		}
-		else
+            String serialPort = (String) getConfig().get(SERIAL_PORT);
+            logger.info("Creating a serial connector for port: {}", serialPort);
+            
+            _connector = new org.openhab.binding.ittybas.internal.connector.ittyBASSerialConnector();
+            portString = serialPort;
+        }
+        else if (getConfig().get(LISTEN_PORT) != null)
 		{
-			updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.CONFIGURATION_ERROR, "Cannot connect to jeelink. serialPort or listenPort is not set.");
-		}
-	}
+            String listenPort = (String) getConfig().get(LISTEN_PORT);
+            logger.info("Creating a network connector for port: {}", listenPort);
 
-	@Override
-	public void dispose() {
-		logger.debug("disposed");
+           	_connector = new org.openhab.binding.ittybas.internal.connector.ittyBASNetworkConnector();
+            portString = listenPort;
+        }
+        else
+        {
+            logger.error("Missing serialPort or listenPort");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Cannot connect.  serialPort or listenPort is not set in configuration");
+        }
 
-		if (_dataProcessor != null)
-		{
-			_dataProcessor.interrupt();
-			try
-			{
-				_dataProcessor.join();
-			} catch (InterruptedException e) {
-			}
+        if (_connector != null && portString.length() > 0) 
+        {
+            try 
+            {
+                _connector.setup(portString);
 
-			_dataProcessor = null;
-		}
+                _dataProcessor = new org.openhab.binding.ittybas.internal.ittyBASDataProcessor(this);
+                _dataProcessor.start();
+                updateStatus(ThingStatus.ONLINE);                
+            }
+            catch (Exception e) 
+            {
+                logger.error("Exception trying to setup connection manager: {}", e);
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.HANDLER_INITIALIZING_ERROR, "Unable to create connection manager");                
+            }
+        }
+        else
+        {
+            logger.error("Connection manager was null after create");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.HANDLER_INITIALIZING_ERROR, "Unable to create connection manager");  
+        }
 
-		if (_connector != null) {
+        logger.debug("Finished initialize of LinkHandler: {}", this);
+    }
+
+    @Override public void dispose()
+    {
+        logger.debug("Starting dispose of LinkHandler: {}", this);
+
+        if (_dataProcessor != null) 
+        {
+            _dataProcessor.interrupt();
+            try
+            {
+                _dataProcessor.join();
+            }
+            catch (InterruptedException e)
+            {
+            }
+
+            _dataProcessor = null;
+        }
+
+        if (_connector != null) 
+        {
 			_connector.shutdown();
 			_connector = null;
 		}
-	}
 
-	public Boolean registerNode(ittyBASDataListener dataListener) {
-		if (dataListener == null) {
-			throw new NullPointerException("It's not allowed to pass a null dataListener.");
-		}
-		return _dataListeners.add(dataListener);
-	}
+        updateStatus(ThingStatus.OFFLINE);
 
-	public Boolean unregisterNode(ittyBASDataListener dataListener) {
-		 return _dataListeners.remove(dataListener);
-	}
+        logger.debug("Finished dispose of LinkHandler: {}", this);
+    }
+
+    @Override
+    public void childHandlerInitialized(@NonNull ThingHandler childHandler, @NonNull Thing childThing)
+    {
+        if (ittyBASDataListener.class.isInstance(childHandler))
+        {
+            _dataListeners.add((ittyBASDataListener)childHandler);
+        }
+        super.childHandlerInitialized(childHandler, childThing);
+    }
+    
+    @Override
+    public void childHandlerDisposed(@NonNull ThingHandler childHandler, @NonNull Thing childThing)
+    {
+        if (ittyBASDataListener.class.isInstance(childHandler))
+        {
+            _dataListeners.remove((ittyBASDataListener)childHandler);
+        }
+        super.childHandlerDisposed(childHandler, childThing);
+    }
+
+    public BlockingQueue messageQueue()
+    {
+        return _connector.messageQueue();
+    }
+
+    public List<ittyBASDataListener> dataListeners()
+    {
+        return _dataListeners;
+    }
 }

@@ -155,7 +155,7 @@ public class ittyBASSerialConnector implements ittyBASConnectorInterface, Serial
 	@Override
 	public void setup(String device) throws NoSuchPortException, PortInUseException, UnsupportedCommOperationException, IOException {
 
-		logger.debug("Connecting... ({})", device);
+		logger.debug("Setting Up... ({})", device);
 
 		CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(device);
 		CommPort commPort = portIdentifier.open(this.getClass().getName(), 2000);
@@ -174,6 +174,8 @@ public class ittyBASSerialConnector implements ittyBASConnectorInterface, Serial
 		_serialPort.notifyOnDataAvailable(true);
 
 		_messageBuffer = new MessageBuffer();
+
+		logger.debug("Set Up");
 	}
 
 	@Override
@@ -224,15 +226,17 @@ public class ittyBASSerialConnector implements ittyBASConnectorInterface, Serial
 
 	@Override
 	public void shutdown() {
-		logger.debug("Disconnecting...");
+		logger.debug("Shutting down...");
 
 		if (_serialPort != null) {
-			logger.debug("Close serial port");
+			logger.debug("Closing serial port");
 			_serialPort.close();
 		}
 		_serialPort = null;
 
 		_messageBuffer = null;
+
+		logger.debug("Shutdown");
 	}
 
 }

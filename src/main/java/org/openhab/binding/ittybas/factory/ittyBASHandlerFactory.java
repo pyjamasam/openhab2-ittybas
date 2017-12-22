@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.ittybas.internal;
+package org.openhab.binding.ittybas.factory;
 
 import static org.openhab.binding.ittybas.ittyBASBindingConstants.*;
 
@@ -39,21 +39,28 @@ public class ittyBASHandlerFactory extends BaseThingHandlerFactory {
 
     private Logger logger = LoggerFactory.getLogger(ittyBASHandlerFactory.class);
 
-    @Override
-    public boolean supportsThingType(ThingTypeUID thingTypeUID) {
+    @Override public boolean supportsThingType(ThingTypeUID thingTypeUID) 
+    {
         return SUPPORTED_THING_TYPES.contains(thingTypeUID);
     }
 
 
-    @Override
-    protected ThingHandler createHandler(Thing thing) {
-        if (ittyBASLinkHandler.SUPPORTED_THING_TYPES.contains(thing.getThingTypeUID())) {
-            ittyBASLinkHandler handler = new ittyBASLinkHandler((Bridge) thing);
+    @Override protected ThingHandler createHandler(Thing thing) 
+    {
+        ThingTypeUID thingTypeUID = thing.getThingTypeUID();
+        
+        if (ittyBASLinkHandler.SUPPORTED_THING_TYPES.contains(thingTypeUID)) 
+        {
+            org.openhab.binding.ittybas.handler.ittyBASLinkHandler handler = new org.openhab.binding.ittybas.handler.ittyBASLinkHandler((Bridge) thing);
             return handler;
-        } else if (ittyBASNodeHandler.SUPPORTED_THING_TYPES.contains(thing.getThingTypeUID())) {
-            ittyBASNodeHandler handler = new ittyBASNodeHandler(thing);
+        }
+        else if (ittyBASNodeHandler.SUPPORTED_THING_TYPES.contains(thingTypeUID)) 
+        {
+            org.openhab.binding.ittybas.handler.ittyBASNodeHandler handler = new org.openhab.binding.ittybas.handler.ittyBASNodeHandler(thing);
             return handler;
-        } else {
+        }
+        else 
+        {
             return null;
         }
     }

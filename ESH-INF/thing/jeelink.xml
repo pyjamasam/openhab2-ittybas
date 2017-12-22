@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="ittybas"
+							xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+							xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+							xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0
+                                                http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+    <bridge-type id="jeelink">
+        <label>ittyBAS Jeelink</label>
+        <description>...</description>
+
+        <config-description>
+            <parameter name="serialPort" type="text" required="false">
+                <label>Serial Port</label>
+                <description>Serial port where the JeeLink transceiver is connected.</description>
+            </parameter>
+            <parameter name="listenPort" type="text" required="false">
+                <label>Serial Port</label>
+                <description>Network port to listen for UDP packets from a remote JeeLink.</description>
+            </parameter>
+        </config-description>
+    </bridge-type>
+</thing:thing-descriptions>

@@ -52,23 +52,22 @@ public class ittyBASNetworkConnector implements ittyBASConnectorInterface {
     	logger.error("No port, or bad port, provided. Will use " + port );
     }   // end catch
 
-		logger.debug("Starting UDP listener on port " + port);
+		logger.info("Starting UDP listener on port " + port);
 		_us = new UdpServer();                             // Create the server
-  	_us.setPort( port );
+  		_us.setPort( port );
 		_us.setLoggingLevel(java.util.logging.Level.WARNING);
 
 		_us.addUdpServerListener( new UdpServer.Listener() {         // Add listener
-            @Override
-            public void packetReceived( UdpServer.Event evt )
-						{     // Packet received
-								ittyBASMessage msg = new ittyBASMessage(evt.getPacketAsBytes(), false);
-								try {
-									_queue.put(msg);
-								}
-								catch (InterruptedException e) {
-								}
-                //logger.debug( evt.getPacketAsString() );      // Write to console
-            }   // end packetReceived
+            @Override public void packetReceived( UdpServer.Event evt )
+			{     // Packet received
+					ittyBASMessage msg = new ittyBASMessage(evt.getPacketAsBytes(), false);
+					try {
+						_queue.put(msg);
+					}
+					catch (InterruptedException e) {
+					}
+					//logger.debug( evt.getPacketAsString() );      // Write to console
+			}   // end packetReceived
         }); // end Listener
 
 		//Spin the server up

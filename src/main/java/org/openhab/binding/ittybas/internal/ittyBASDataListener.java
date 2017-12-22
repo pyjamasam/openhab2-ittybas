@@ -13,5 +13,5 @@ import org.openhab.binding.ittybas.internal.ittyBASReading;
 
 public interface ittyBASDataListener
 {
-	public void dataUpdate(ittyBASReading reading);
+	public void dataUpdate(org.openhab.binding.ittybas.internal.ittyBASReading reading);
 }

@@ -1,13 +1,19 @@
 Manifest-Version: 1.0
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .
 Bundle-ManifestVersion: 2
 Bundle-Name: ittyBAS Binding
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-SymbolicName: org.openhab.binding.ittybas;singleton:=true
 Bundle-Vendor: openHAB
-Bundle-Version: 2.0.0.qualifier
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Bundle-ClassPath: .
-Import-Package: org.openhab.binding.ittybas,
+Bundle-Version: 1.0.0
+Export-Package: 
+ org.openhab.binding.ittybas,
+ org.openhab.binding.ittybas.handler
+Import-Package: 
+ org.openhab.binding.ittybas,
  org.openhab.binding.ittybas.handler,
+ org.eclipse.jdt.annotation;resolution:=optional,
  org.eclipse.smarthome.config.core,
  org.eclipse.smarthome.core.library.types,
  org.eclipse.smarthome.core.thing,
@@ -20,5 +26,3 @@ Import-Package: org.openhab.binding.ittybas,
  gnu.io,
  org.apache.commons.io
 Service-Component: OSGI-INF/*.xml
-Export-Package: org.openhab.binding.ittybas,
- org.openhab.binding.ittybas.handler

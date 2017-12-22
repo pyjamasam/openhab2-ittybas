@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="ittybas"
+							xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+							xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+							xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 
+                                                http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+   
+    <thing-type id="jeenode">
+        <supported-bridge-type-refs>
+            <bridge-type-ref id="jeelink" />
+        </supported-bridge-type-refs>
+
+        <label>ittyBAS Jeenode</label>
+        <description>...</description>
+
+        <category>Sensor</category>
+
+        <channels>
+            <channel id="temperature" typeId="temperature"></channel>
+            <channel id="relativehumidity" typeId="relativehumidity"></channel>
+            <channel id="battery-voltage" typeId="battery-voltage"></channel>
+        </channels>
+        
+        <config-description> 
+            <parameter name="nodeId" type="text">
+                <label>Node ID</label>
+                <description>...</description>
+                <required>true</required>
+            </parameter>
+        </config-description>
+    </thing-type>
+
+    <channel-type id="temperature">
+        <item-type>Number</item-type>
+        <label>Current Temperature</label>
+        <category>Temperature</category>
+        <state pattern="%0.1f °C" readOnly="true"/>
+    </channel-type>
+    <channel-type id="relativehumidity">
+        <item-type>Number</item-type>
+        <label>Current Relative Humidity</label>
+        <category>Humidity</category>
+        <state pattern="%0.1f %%RH" readOnly="true"/>
+    </channel-type>
+    <channel-type id="battery-voltage">
+        <item-type>Number</item-type>
+        <label>Current Battery Voltage</label>
+        <category>BatteryLevel</category>
+        <state pattern="%0.2f V" readOnly="true"/>
+    </channel-type>
+    
+</thing:thing-descriptions>

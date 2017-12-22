@@ -11,11 +11,13 @@ package org.openhab.binding.ittybas.internal.connector;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
+
 /**
  * This interface defines interface to communicate ittyBAS controller.
  *
  * @author Chris Whiteford - Initial contribution
  */
+
 public interface ittyBASConnectorInterface {
 
 	/**
